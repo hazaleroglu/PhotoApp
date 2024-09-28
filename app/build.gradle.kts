@@ -93,4 +93,10 @@ dependencies {
 
     // Coil
     implementation(libs.coil)
+
+    //Camera X
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
 }

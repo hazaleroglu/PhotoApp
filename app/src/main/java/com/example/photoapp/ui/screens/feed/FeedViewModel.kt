@@ -44,4 +44,13 @@ class FeedViewModel @Inject constructor(
             }
         }
     }
+
+    fun loadPhotoToStorage(photo: Photo, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+        storageRepository.uploadPhotoToFirestore(
+            photo = photo,
+            onSuccess = onSuccess,
+            onFailure = onFailure
+
+        )
+    }
 }

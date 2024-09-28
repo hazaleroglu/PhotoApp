@@ -6,6 +6,6 @@ private object Route {
 }
 
 sealed class Screen(val route: String) {
-    object Login: Screen(Route.LOGIN)
-    object Feed: Screen(Route.FEED)
+    object Login : Screen(Route.LOGIN)
+    object Feed : Screen(Route.FEED)
 }

@@ -6,4 +6,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface StorageRepository {
     fun getPhotos(): Flow<NetworkResult<List<Photo>>>
+    fun uploadPhotoToFirestore(photo: Photo, onSuccess: () -> Unit, onFailure: (Exception) -> Unit)
 }

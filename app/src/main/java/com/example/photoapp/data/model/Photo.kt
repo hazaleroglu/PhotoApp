@@ -7,7 +7,7 @@ data class Photo(
     val id: String = "",
     val addedDate: Timestamp? = null,
     val name: String? = "",
-    val photo: String = ""
+    val base64String: String = ""
 ) {
     fun toDate(): Date? {
         return addedDate?.toDate()
