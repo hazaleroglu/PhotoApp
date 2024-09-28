@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "656093786997",
+    "project_id": "photoapp-7a31b",
+    "storage_bucket": "photoapp-7a31b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:656093786997:android:faa83fbd4b3c54a927993c",
+        "android_client_info": {
+          "package_name": "com.example.photoapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCazUJh7a92bOwVwkMrYbPW7Pv8xLHLVY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
