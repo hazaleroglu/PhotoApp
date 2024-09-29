@@ -11,19 +11,25 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
@@ -44,6 +50,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -53,6 +60,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.photoapp.R
 import com.example.photoapp.data.model.Photo
 import com.example.photoapp.ui.components.CustomFloatingActionButton
 import com.example.photoapp.util.decodeBase64ToImage
@@ -66,14 +74,15 @@ import com.example.photoapp.R.string as AppText
 fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
     val photos by viewModel.photos.collectAsState()
 
-    FeedScreenView(photos, viewModel::loadPhotoToStorage)
+    FeedScreenView(photos, viewModel::loadPhotoToStorage, viewModel::sortItems)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreenView(
     photos: List<Photo>,
-    loadImageToStorage: (Photo, () -> Unit, (Exception) -> Unit) -> Unit
+    loadImageToStorage: (Photo, () -> Unit, (Exception) -> Unit) -> Unit,
+    sortButtonClick: (SortType) -> Unit
 ) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
@@ -159,16 +168,61 @@ fun FeedScreenView(
         }
     }
 
+    var expanded by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = stringResource(AppText.feed_title),
-                        fontSize = (36.sp),
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = stringResource(AppText.feed_title),
+                            fontSize = (36.sp),
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Box(
+                            modifier = Modifier
+                                .wrapContentSize()
+                                .padding(16.dp)
+                        ) {
+                            IconButton(
+                                onClick = { expanded = true },
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            ) {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_sort),
+                                    "sort",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Name") },
+                                    onClick = {
+                                        sortButtonClick.invoke(SortType.NAME)
+                                        expanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Added Date") },
+                                    onClick = {
+                                        sortButtonClick.invoke(SortType.ADDED_DATE)
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             )
         },
@@ -177,7 +231,11 @@ fun FeedScreenView(
         },
         floatingActionButtonPosition = FabPosition.End
     ) { paddingValues ->
-        PhotoGrid(modifier = Modifier.padding(paddingValues), photos = photos)
+        Column(modifier = Modifier.padding(paddingValues)) {
+
+            PhotoGrid(photos = photos)
+        }
+
     }
 }
 

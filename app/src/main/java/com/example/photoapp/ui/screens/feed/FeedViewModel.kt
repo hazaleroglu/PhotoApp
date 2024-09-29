@@ -9,6 +9,7 @@ import com.example.photoapp.util.NetworkResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -52,5 +53,16 @@ class FeedViewModel @Inject constructor(
             onFailure = onFailure
 
         )
+    }
+
+    fun sortItems(sortType: SortType) {
+        _photos.update { photos ->
+            when(sortType) {
+                SortType.NAME -> photos.sortedBy { it.name }
+                SortType.ADDED_DATE -> {
+                    photos.sortedBy { it.addedDate }.reversed()
+                }
+            }
+        }
     }
 }
