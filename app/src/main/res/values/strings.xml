@@ -3,6 +3,6 @@
     <string name="upload_successful">Upload Successful!</string>
     <string name="upload_unsuccessful">Upload Unsuccessful!</string>
 
-    <string name="feed_title">Gallery</string>
+    <string name="feed_title">Photos</string>
     <string name="add_photo">Add Photo</string>
 </resources>

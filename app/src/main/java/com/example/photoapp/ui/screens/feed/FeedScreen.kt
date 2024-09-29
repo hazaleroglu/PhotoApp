@@ -1,14 +1,16 @@
 package com.example.photoapp.ui.screens.feed
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Environment
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -20,19 +22,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeFloatingActionButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,15 +45,21 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.photoapp.data.model.Photo
+import com.example.photoapp.ui.components.CustomFloatingActionButton
 import com.example.photoapp.util.decodeBase64ToImage
 import com.example.photoapp.util.encodeImageToBase64
 import com.example.photoapp.util.getImageName
 import com.example.photoapp.util.toBitmap
+import java.io.File
 import com.example.photoapp.R.string as AppText
 
 @Composable
@@ -76,6 +78,15 @@ fun FeedScreenView(
     val context = LocalContext.current
     val contentResolver = context.contentResolver
     var selectedImage by remember { mutableStateOf<Uri?>(null) }
+    var takenPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -100,33 +111,73 @@ fun FeedScreenView(
         }
     )
 
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            loadImageToStorage.invoke(
+                Photo(
+                    name = takenPhotoUri?.getImageName(contentResolver),
+                    base64String = takenPhotoUri?.toBitmap(contentResolver)
+                        ?.encodeImageToBase64() ?: ""
+                ),
+                {
+                    Toast.makeText(context, AppText.upload_successful, Toast.LENGTH_SHORT)
+                        .show()
+                }, {
+                    Toast.makeText(context, AppText.upload_unsuccessful, Toast.LENGTH_SHORT)
+                        .show()
+                })
+        }
+    }
+
+    val requestCameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        hasCameraPermission = isGranted
+    }
+
     fun launchPhotoPicker() {
         singlePhotoPickerLauncher.launch(
             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
         )
     }
 
+    fun galleryButtonClicked() {
+        selectedImage = null
+        launchPhotoPicker()
+    }
+
+    fun cameraButtonClicked() {
+        if (hasCameraPermission) {
+            val uri = createImageFile(context)
+            takenPhotoUri = uri
+
+            cameraLauncher.launch(uri)
+        } else {
+            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = stringResource(AppText.feed_title)) }
+                title = {
+                    Text(
+                        text = stringResource(AppText.feed_title),
+                        fontSize = (36.sp),
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             )
         },
         floatingActionButton = {
-            LargeFloatingActionButton(
-                onClick = {
-                    selectedImage = null
-                    launchPhotoPicker()
-                },
-                containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
-                elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation(),
-            ) {
-                Icon(Icons.Filled.Add, "Add")
-            }
+            CustomFloatingActionButton({ galleryButtonClicked() }, { cameraButtonClicked() })
         },
-        floatingActionButtonPosition = FabPosition.Center
+        floatingActionButtonPosition = FabPosition.End
     ) { paddingValues ->
-        PhotoGrid(photos = photos, Modifier.padding(paddingValues))
+        PhotoGrid(modifier = Modifier.padding(paddingValues), photos = photos)
     }
 }
 
@@ -208,6 +259,18 @@ fun FullScreenImageDialog(image: ImageBitmap, onDismiss: () -> Unit) {
     }
 }
 
+fun createImageFile(context: Context): Uri {
+    // Create a file to store the image
+    val photoFile = File(
+        context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+        "photo_${System.currentTimeMillis()}.jpg"
+    )
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.provider",
+        photoFile
+    )
+}
 
 @Preview
 @Composable
