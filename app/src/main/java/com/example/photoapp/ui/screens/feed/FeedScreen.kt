@@ -13,7 +13,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -207,16 +206,30 @@ fun FeedScreenView(
                                 onDismissRequest = { expanded = false },
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Name") },
+                                    text = { Text("Name Low to High") },
                                     onClick = {
-                                        sortButtonClick.invoke(SortType.NAME)
+                                        sortButtonClick.invoke(SortType.NAME_LOW_TO_HIGH)
                                         expanded = false
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Added Date") },
+                                    text = { Text("Date Low to High") },
                                     onClick = {
-                                        sortButtonClick.invoke(SortType.ADDED_DATE)
+                                        sortButtonClick.invoke(SortType.DATE_LOW_TO_HIGH)
+                                        expanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Name High to Low") },
+                                    onClick = {
+                                        sortButtonClick.invoke(SortType.NAME_HIGH_TO_LOW)
+                                        expanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Date High to Low") },
+                                    onClick = {
+                                        sortButtonClick.invoke(SortType.DATE_HIGH_TO_LOW)
                                         expanded = false
                                     }
                                 )
@@ -231,11 +244,7 @@ fun FeedScreenView(
         },
         floatingActionButtonPosition = FabPosition.End
     ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues)) {
-
-            PhotoGrid(photos = photos)
-        }
-
+        PhotoGrid(modifier = Modifier.padding(paddingValues), photos = photos)
     }
 }
 

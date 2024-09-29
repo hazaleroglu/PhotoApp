@@ -58,10 +58,10 @@ class FeedViewModel @Inject constructor(
     fun sortItems(sortType: SortType) {
         _photos.update { photos ->
             when(sortType) {
-                SortType.NAME -> photos.sortedBy { it.name }
-                SortType.ADDED_DATE -> {
-                    photos.sortedBy { it.addedDate }.reversed()
-                }
+                SortType.NAME_LOW_TO_HIGH -> photos.sortedBy { it.name }
+                SortType.NAME_HIGH_TO_LOW -> photos.sortedBy { it.name }.reversed()
+                SortType.DATE_LOW_TO_HIGH -> photos.sortedBy { it.addedDate }
+                SortType.DATE_HIGH_TO_LOW -> photos.sortedBy { it.addedDate }.reversed()
             }
         }
     }
