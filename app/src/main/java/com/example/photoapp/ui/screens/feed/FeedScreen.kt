@@ -1,14 +1,9 @@
 package com.example.photoapp.ui.screens.feed
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,15 +15,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
@@ -56,16 +48,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.photoapp.R
 import com.example.photoapp.data.model.Photo
 import com.example.photoapp.ui.components.CustomFloatingActionButton
+import com.example.photoapp.util.cameraPermission
 import com.example.photoapp.util.decodeBase64ToImage
-import com.example.photoapp.util.encodeImageToBase64
-import com.example.photoapp.util.getImageName
-import com.example.photoapp.util.toBitmap
+import com.example.photoapp.util.photoPicker
 import java.io.File
 import com.example.photoapp.R.string as AppText
 
@@ -92,89 +82,16 @@ fun FeedScreenView(
     clearFilterButtonClicked: () -> Unit
 ) {
     val context = LocalContext.current
-    val contentResolver = context.contentResolver
-    var selectedImage by remember { mutableStateOf<Uri?>(null) }
-    var takenPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var hasCameraPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
-        )
+
+    val successAction = {
+        Toast.makeText(context, R.string.upload_successful, Toast.LENGTH_SHORT)
+            .show()
     }
 
-    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            if (uri != null) {
-                selectedImage = uri
-
-                loadImageToStorage.invoke(
-                    Photo(
-                        name = selectedImage?.getImageName(contentResolver),
-                        base64String = selectedImage?.toBitmap(contentResolver)
-                            ?.encodeImageToBase64() ?: ""
-                    ),
-                    {
-                        Toast.makeText(context, AppText.upload_successful, Toast.LENGTH_SHORT)
-                            .show()
-                    }, {
-                        Toast.makeText(context, AppText.upload_unsuccessful, Toast.LENGTH_SHORT)
-                            .show()
-                    })
-            }
-        }
-    )
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success) {
-            loadImageToStorage.invoke(
-                Photo(
-                    name = takenPhotoUri?.getImageName(contentResolver),
-                    base64String = takenPhotoUri?.toBitmap(contentResolver)
-                        ?.encodeImageToBase64() ?: ""
-                ),
-                {
-                    Toast.makeText(context, AppText.upload_successful, Toast.LENGTH_SHORT)
-                        .show()
-                }, {
-                    Toast.makeText(context, AppText.upload_unsuccessful, Toast.LENGTH_SHORT)
-                        .show()
-                })
-        }
+    val errorAction: ((Exception) -> Unit) = {
+        Toast.makeText(context, R.string.upload_unsuccessful, Toast.LENGTH_SHORT)
+            .show()
     }
-
-    val requestCameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        hasCameraPermission = isGranted
-    }
-
-    fun launchPhotoPicker() {
-        singlePhotoPickerLauncher.launch(
-            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-        )
-    }
-
-    fun galleryButtonClicked() {
-        selectedImage = null
-        launchPhotoPicker()
-    }
-
-    fun cameraButtonClicked() {
-        if (hasCameraPermission) {
-            val uri = createImageFile(context)
-            takenPhotoUri = uri
-
-            cameraLauncher.launch(uri)
-        } else {
-            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        }
-    }
-
 
     Scaffold(
         topBar = {
@@ -217,7 +134,18 @@ fun FeedScreenView(
             )
         },
         floatingActionButton = {
-            CustomFloatingActionButton({ galleryButtonClicked() }, { cameraButtonClicked() })
+            CustomFloatingActionButton(
+                {
+                    photoPicker(context = context, loadImage = { photo ->
+                        loadImageToStorage.invoke(photo, successAction, errorAction)
+                    })
+                },
+                {
+                    cameraPermission(context = context, loadImage = { photo ->
+                        loadImageToStorage.invoke(photo, successAction, errorAction)
+                    })
+                }
+            )
         },
         floatingActionButtonPosition = FabPosition.End
     ) { paddingValues ->

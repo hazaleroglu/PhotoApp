@@ -24,8 +24,23 @@ import androidx.compose.ui.unit.dp
 import com.example.photoapp.R
 
 @Composable
-fun CustomFloatingActionButton(galleryAction: () -> Unit, cameraAction: () -> Unit) {
+fun CustomFloatingActionButton(
+    galleryAction: @Composable () -> Unit,
+    cameraAction: @Composable () -> Unit
+) {
     var showMenu by remember { mutableStateOf(false) }
+    var launchCamera by remember { mutableStateOf(false) }
+    var photoPicker by remember { mutableStateOf(false) }
+
+    if (launchCamera) {
+        cameraAction.invoke()
+        launchCamera = false
+    }
+
+    if (photoPicker) {
+        galleryAction.invoke()
+        photoPicker = false
+    }
 
     Box(
         modifier = Modifier
@@ -50,7 +65,7 @@ fun CustomFloatingActionButton(galleryAction: () -> Unit, cameraAction: () -> Un
                 FloatingActionButton(
                     onClick = {
                         showMenu = false
-                        cameraAction.invoke()
+                        launchCamera = true
                     },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer
                 ) {
@@ -66,7 +81,7 @@ fun CustomFloatingActionButton(galleryAction: () -> Unit, cameraAction: () -> Un
                 FloatingActionButton(
                     onClick = {
                         showMenu = false
-                        galleryAction.invoke()
+                        photoPicker = true
                     },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer
                 ) {
