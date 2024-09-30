@@ -73,7 +73,13 @@ import com.example.photoapp.R.string as AppText
 fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
     val photos by viewModel.photos.collectAsState()
 
-    FeedScreenView(photos, viewModel::loadPhotoToStorage, viewModel::sortItems)
+    FeedScreenView(
+        photos,
+        viewModel::loadPhotoToStorage,
+        viewModel::sortItems,
+        viewModel::filterItemsByDate,
+        viewModel::clearItemsFilter
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,7 +87,9 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
 fun FeedScreenView(
     photos: List<Photo>,
     loadImageToStorage: (Photo, () -> Unit, (Exception) -> Unit) -> Unit,
-    sortButtonClick: (SortType) -> Unit
+    sortButtonClick: (SortType) -> Unit,
+    filterButtonClicked: (Long, Long) -> Unit,
+    clearFilterButtonClicked: () -> Unit
 ) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
@@ -167,7 +175,6 @@ fun FeedScreenView(
         }
     }
 
-    var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -185,56 +192,26 @@ fun FeedScreenView(
                             fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        Box(
-                            modifier = Modifier
-                                .wrapContentSize()
-                                .padding(16.dp)
-                        ) {
-                            IconButton(
-                                onClick = { expanded = true },
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            ) {
-                                Icon(
-                                    painterResource(id = R.drawable.ic_sort),
-                                    "sort",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
 
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false },
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Name Low to High") },
-                                    onClick = {
-                                        sortButtonClick.invoke(SortType.NAME_LOW_TO_HIGH)
-                                        expanded = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Date Low to High") },
-                                    onClick = {
-                                        sortButtonClick.invoke(SortType.DATE_LOW_TO_HIGH)
-                                        expanded = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Name High to Low") },
-                                    onClick = {
-                                        sortButtonClick.invoke(SortType.NAME_HIGH_TO_LOW)
-                                        expanded = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Date High to Low") },
-                                    onClick = {
-                                        sortButtonClick.invoke(SortType.DATE_HIGH_TO_LOW)
-                                        expanded = false
-                                    }
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            SortOptionsItem(onSortButtonClick = { sortType ->
+                                sortButtonClick.invoke(sortType)
+                            })
+
+                            DatePickerItem(dateSelected = { startDate, endDate ->
+                                if (startDate != null && endDate != null) {
+                                    filterButtonClicked.invoke(startDate, endDate)
+                                }
+                            })
+
+                            IconButton(onClick = { clearFilterButtonClicked.invoke() }) {
+                                Icon(
+                                    painterResource(R.drawable.ic_filter_off), "filter off",
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
+
                     }
                 }
             )

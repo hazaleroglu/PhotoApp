@@ -31,7 +31,7 @@ class FeedViewModel @Inject constructor(
             storageRepository.getPhotos().collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
-                        _photos.value = result.data
+                        _photos.emit(result.data)
                     }
 
                     is NetworkResult.Error -> {
@@ -49,7 +49,7 @@ class FeedViewModel @Inject constructor(
     fun loadPhotoToStorage(photo: Photo, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         storageRepository.uploadPhotoToFirestore(
             photo = photo,
-            onSuccess = onSuccess,
+            onSuccess = onSuccess.also { getPhotos() },
             onFailure = onFailure
 
         )
@@ -57,12 +57,24 @@ class FeedViewModel @Inject constructor(
 
     fun sortItems(sortType: SortType) {
         _photos.update { photos ->
-            when(sortType) {
+            when (sortType) {
                 SortType.NAME_LOW_TO_HIGH -> photos.sortedBy { it.name }
                 SortType.NAME_HIGH_TO_LOW -> photos.sortedBy { it.name }.reversed()
                 SortType.DATE_LOW_TO_HIGH -> photos.sortedBy { it.addedDate }
                 SortType.DATE_HIGH_TO_LOW -> photos.sortedBy { it.addedDate }.reversed()
             }
         }
+    }
+
+    fun filterItemsByDate(startDate: Long, endDate: Long) {
+        _photos.update {
+            it.filter { photo ->
+                photo.addedDate?.toDate()?.time in startDate..endDate
+            }
+        }
+    }
+
+    fun clearItemsFilter() {
+        getPhotos()
     }
 }
